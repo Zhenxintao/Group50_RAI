@@ -1,0 +1,54 @@
+{
+	"cmake" : 
+	{
+		"generator" : 
+		{
+			"multiConfig" : false,
+			"name" : "Unix Makefiles"
+		},
+		"paths" : 
+		{
+			"cmake" : "/home/cody/miniforge3/envs/roboenv-py3.10/bin/cmake",
+			"cpack" : "/home/cody/miniforge3/envs/roboenv-py3.10/bin/cpack",
+			"ctest" : "/home/cody/miniforge3/envs/roboenv-py3.10/bin/ctest",
+			"root" : "/home/cody/miniforge3/envs/roboenv-py3.10/share/cmake-3.26"
+		},
+		"version" : 
+		{
+			"isDirty" : false,
+			"major" : 3,
+			"minor" : 26,
+			"patch" : 3,
+			"string" : "3.26.3",
+			"suffix" : ""
+		}
+	},
+	"objects" : 
+	[
+		{
+			"jsonFile" : "codemodel-v2-ac1302d62e77a8287ae1.json",
+			"kind" : "codemodel",
+			"version" : 
+			{
+				"major" : 2,
+				"minor" : 5
+			}
+		}
+	],
+	"reply" : 
+	{
+		"client-colcon-cmake" : 
+		{
+			"codemodel-v2" : 
+			{
+				"jsonFile" : "codemodel-v2-ac1302d62e77a8287ae1.json",
+				"kind" : "codemodel",
+				"version" : 
+				{
+					"major" : 2,
+					"minor" : 5
+				}
+			}
+		}
+	}
+}

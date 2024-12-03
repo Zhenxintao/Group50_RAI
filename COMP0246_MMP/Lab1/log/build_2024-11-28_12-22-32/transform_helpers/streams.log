@@ -1,0 +1,24 @@
+[0.972s] Invoking command in '/home/cody/ros2_ws/src/COMP0246_Labs/lab1submission/transform_helpers': CONDA_PROMPT_MODIFIER=(roboenv-py3.10) PYTHONPATH=/home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/prefix_override:/home/cody/miniforge3/envs/roboenv-py3.10/lib/python3.10/site-packages/colcon_core/task/python/colcon_distutils_commands:/home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages:${PYTHONPATH} /home/cody/miniforge3/envs/roboenv-py3.10/bin/python3.10 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/transform_helpers build --build-base /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build install --record /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/install.log --single-version-externally-managed install_data
+[1.468s] running egg_info
+[1.501s] writing ../../build/transform_helpers/transform_helpers.egg-info/PKG-INFO
+[1.528s] writing dependency_links to ../../build/transform_helpers/transform_helpers.egg-info/dependency_links.txt
+[1.609s] writing entry points to ../../build/transform_helpers/transform_helpers.egg-info/entry_points.txt
+[1.662s] writing requirements to ../../build/transform_helpers/transform_helpers.egg-info/requires.txt
+[1.687s] writing top-level names to ../../build/transform_helpers/transform_helpers.egg-info/top_level.txt
+[1.730s] reading manifest file '../../build/transform_helpers/transform_helpers.egg-info/SOURCES.txt'
+[1.730s] writing manifest file '../../build/transform_helpers/transform_helpers.egg-info/SOURCES.txt'
+[1.730s] running build
+[1.730s] running build_py
+[1.730s] copying transform_helpers/main.py -> /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers
+[1.730s] running install
+[1.734s] running install_lib
+[1.766s] copying /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers/main.py -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers
+[1.766s] byte-compiling /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers/main.py to main.cpython-310.pyc
+[1.767s] running install_data
+[1.767s] running install_egg_info
+[1.804s] removing '/home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers-0.0.0-py3.10.egg-info' (and everything under it)
+[1.804s] Copying ../../build/transform_helpers/transform_helpers.egg-info to /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers-0.0.0-py3.10.egg-info
+[1.804s] running install_scripts
+[1.868s] Installing main script to /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/transform_helpers
+[1.868s] writing list of installed files to '/home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/install.log'
+[1.886s] Invoked command in '/home/cody/ros2_ws/src/COMP0246_Labs/lab1submission/transform_helpers' returned '0': CONDA_PROMPT_MODIFIER=(roboenv-py3.10) PYTHONPATH=/home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/prefix_override:/home/cody/miniforge3/envs/roboenv-py3.10/lib/python3.10/site-packages/colcon_core/task/python/colcon_distutils_commands:/home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages:${PYTHONPATH} /home/cody/miniforge3/envs/roboenv-py3.10/bin/python3.10 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/transform_helpers build --build-base /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build install --record /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/install.log --single-version-externally-managed install_data

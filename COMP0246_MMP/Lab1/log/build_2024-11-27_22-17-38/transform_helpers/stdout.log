@@ -1,0 +1,42 @@
+running egg_info
+creating ../../build/transform_helpers/transform_helpers.egg-info
+writing ../../build/transform_helpers/transform_helpers.egg-info/PKG-INFO
+writing dependency_links to ../../build/transform_helpers/transform_helpers.egg-info/dependency_links.txt
+writing entry points to ../../build/transform_helpers/transform_helpers.egg-info/entry_points.txt
+writing requirements to ../../build/transform_helpers/transform_helpers.egg-info/requires.txt
+writing top-level names to ../../build/transform_helpers/transform_helpers.egg-info/top_level.txt
+writing manifest file '../../build/transform_helpers/transform_helpers.egg-info/SOURCES.txt'
+reading manifest file '../../build/transform_helpers/transform_helpers.egg-info/SOURCES.txt'
+writing manifest file '../../build/transform_helpers/transform_helpers.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build
+creating /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib
+creating /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers
+copying transform_helpers/utils.py -> /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers
+copying transform_helpers/__init__.py -> /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers
+copying transform_helpers/main.py -> /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers
+running install
+running install_lib
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers
+copying /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers/utils.py -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers
+copying /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers/__init__.py -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers
+copying /home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/build/lib/transform_helpers/main.py -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers
+byte-compiling /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers/utils.py to utils.cpython-310.pyc
+byte-compiling /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers/main.py to main.cpython-310.pyc
+running install_data
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/ament_index
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/ament_index/resource_index
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/ament_index/resource_index/packages
+copying resource/transform_helpers -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/ament_index/resource_index/packages
+copying package.xml -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/transform_helpers
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/transform_helpers/config
+copying config/viz.rviz -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/transform_helpers/config
+creating /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/transform_helpers/launch
+copying launch/bringup.launch.py -> /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/share/transform_helpers/launch
+running install_egg_info
+Copying ../../build/transform_helpers/transform_helpers.egg-info to /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/python3.10/site-packages/transform_helpers-0.0.0-py3.10.egg-info
+running install_scripts
+Installing main script to /home/cody/ros2_ws/src/COMP0246_Labs/install/transform_helpers/lib/transform_helpers
+writing list of installed files to '/home/cody/ros2_ws/src/COMP0246_Labs/build/transform_helpers/install.log'

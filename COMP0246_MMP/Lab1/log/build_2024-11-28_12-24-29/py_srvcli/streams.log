@@ -1,0 +1,23 @@
+[0.998s] Invoking command in '/home/cody/ros2_ws/src/COMP0246_Labs/py_srvcli': CONDA_PROMPT_MODIFIER=(roboenv-py3.10) PYTHONPATH=/home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/prefix_override:/home/cody/miniforge3/envs/roboenv-py3.10/lib/python3.10/site-packages/colcon_core/task/python/colcon_distutils_commands:/home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/python3.10/site-packages:${PYTHONPATH} /home/cody/miniforge3/envs/roboenv-py3.10/bin/python3.10 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/py_srvcli build --build-base /home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/build install --record /home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/install.log --single-version-externally-managed install_data
+[1.467s] running egg_info
+[1.500s] writing ../build/py_srvcli/py_srvcli.egg-info/PKG-INFO
+[1.525s] writing dependency_links to ../build/py_srvcli/py_srvcli.egg-info/dependency_links.txt
+[1.604s] writing entry points to ../build/py_srvcli/py_srvcli.egg-info/entry_points.txt
+[1.662s] writing requirements to ../build/py_srvcli/py_srvcli.egg-info/requires.txt
+[1.688s] writing top-level names to ../build/py_srvcli/py_srvcli.egg-info/top_level.txt
+[1.729s] reading manifest file '../build/py_srvcli/py_srvcli.egg-info/SOURCES.txt'
+[1.729s] adding license file 'LICENSE'
+[1.729s] writing manifest file '../build/py_srvcli/py_srvcli.egg-info/SOURCES.txt'
+[1.729s] running build
+[1.729s] running build_py
+[1.730s] running install
+[1.732s] running install_lib
+[1.766s] running install_data
+[1.766s] running install_egg_info
+[1.800s] removing '/home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/python3.10/site-packages/py_srvcli-0.0.0-py3.10.egg-info' (and everything under it)
+[1.802s] Copying ../build/py_srvcli/py_srvcli.egg-info to /home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/python3.10/site-packages/py_srvcli-0.0.0-py3.10.egg-info
+[1.802s] running install_scripts
+[1.873s] Installing client script to /home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/py_srvcli
+[1.873s] Installing service script to /home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/py_srvcli
+[1.873s] writing list of installed files to '/home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/install.log'
+[1.892s] Invoked command in '/home/cody/ros2_ws/src/COMP0246_Labs/py_srvcli' returned '0': CONDA_PROMPT_MODIFIER=(roboenv-py3.10) PYTHONPATH=/home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/prefix_override:/home/cody/miniforge3/envs/roboenv-py3.10/lib/python3.10/site-packages/colcon_core/task/python/colcon_distutils_commands:/home/cody/ros2_ws/src/COMP0246_Labs/install/py_srvcli/lib/python3.10/site-packages:${PYTHONPATH} /home/cody/miniforge3/envs/roboenv-py3.10/bin/python3.10 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/py_srvcli build --build-base /home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/build install --record /home/cody/ros2_ws/src/COMP0246_Labs/build/py_srvcli/install.log --single-version-externally-managed install_data
