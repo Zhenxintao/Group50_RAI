@@ -43,6 +43,7 @@ def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius
         largest_circle = max(circles[0, :], key=lambda x: x[2])
         mask = np.zeros_like(gray)
         cv2.circle(mask, (largest_circle[0], largest_circle[1]), largest_circle[2], 255, thickness=-1)
+        mask[mask == 255] = 1
 
         if display_results:
             cv2.circle(image, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 255, 0), 4)
@@ -224,3 +225,79 @@ def cal_omega(imgDict1, imgDict2, method="sift", display_results=True):
     # print(theta)
     omega = np.mean(theta) / deltaTime
     return omega
+
+
+def dynamic_program_vec(unaryCosts, pairwiseCosts):
+    nNodesPerPosition = len(unaryCosts)
+    nPosition = len(unaryCosts[0])
+
+    minimumCost = np.zeros([nNodesPerPosition, nPosition])
+    parents = np.zeros([nNodesPerPosition, nPosition])
+
+    minimumCost[:, 0] = unaryCosts[:, 0]
+
+    for cPosition in range(1, nPosition):
+        possPathCosts = pairwiseCosts + minimumCost[:, cPosition - 1][:, np.newaxis]
+        minCosts = np.min(possPathCosts, axis=0)
+        minInds = np.argmin(possPathCosts, axis=0)
+
+        minimumCost[:, cPosition] = minCosts + unaryCosts[:, cPosition]
+        parents[:, cPosition] = minInds
+
+    bestPath = np.zeros([nPosition], dtype=int)
+
+    minInd = np.argmin(minimumCost[:, -1])
+    bestPath[-1] = minInd
+
+    for cPosition in range(nPosition - 2, -1, -1):
+        bestPath[cPosition] = parents[bestPath[cPosition + 1], cPosition + 1]
+    return bestPath
+
+
+def estimate_depth(img1, img2, mask, display_results=True):
+    """
+
+    Args:
+        img1 (ndarray):
+        img2 (ndarray):
+        mask (ndarray):
+        display_results:
+
+    Returns:
+        ndarray
+    """
+    img1gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    img2gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+    imY = len(img1gray)
+    imX = len(img1gray[0])
+
+    maxDisp = 60
+    alpha = 50
+    noiseSD = 2
+
+    pairwiseCosts = alpha * np.ones([maxDisp, maxDisp]) - alpha * np.eye(maxDisp)
+    estDisp = np.zeros([imY, imX - maxDisp])
+
+    for cY in range(imY):
+        unaryCosts = np.zeros([maxDisp, imX - maxDisp])
+
+        for cDisp in range(maxDisp):
+            pixelValueImage1 = img1gray[cY, :imX - maxDisp]
+            pixelValueImage2 = img2gray[cY, cDisp:imX - maxDisp + cDisp]
+            likelihood = 0.5 * ((pixelValueImage1 - pixelValueImage2) / (noiseSD + 1e-10)) ** 2 + np.log(
+                noiseSD * np.sqrt(2 * np.pi) + 1e-10)
+            cost = likelihood
+
+            unaryCosts[cDisp, :] = cost
+
+        estDisp[cY, :] = np.transpose(dynamic_program_vec(unaryCosts, pairwiseCosts))
+        # estDisp = estDisp * mask[:, :imX - maxDisp]
+
+        if cY == imY - 1 and display_results:
+            plt.title('Estimated Disparity')
+            plt.imshow(estDisp, cmap='gray', extent=[0, len(estDisp[0]), 0, len(estDisp)],
+                       interpolation='nearest')
+            plt.axis('off')
+            plt.show()
+            return estDisp

@@ -15,12 +15,14 @@ def Task3b():
 
     Returns:
         float: Time for one full rotation.
+        float: Average rotation velocity.
     """
-    trueT = 51.25
-    return trueT
+    trueT = 51.25 + 7 * 60
+    trueOmega = 2 * np.pi / trueT
+    return trueT, trueOmega
 
 
-def Task3c(datasets, circles, max_len=-1, method="sift", display_results=True):
+def Task3c(datasets, circles, imageReader, method="sift", display_results=True):
     """
     Continuous Rotation Cycle Estimation from Video.
 
@@ -30,7 +32,7 @@ def Task3c(datasets, circles, max_len=-1, method="sift", display_results=True):
         datasets (List[{
             "path": str,
             "images": List[Dict{
-                "name": str,
+                "path": str,
                 "frame": int,
                 "fps": float,
                 "timestamp": int,
@@ -48,15 +50,12 @@ def Task3c(datasets, circles, max_len=-1, method="sift", display_results=True):
     """
     TList = []
     for dataset in datasets:
-        dataset = copy.copy(dataset)
-        if 0 < max_len < len(dataset["images"]):
-            dataset["images"] = dataset["images"][:max_len]
-
         thetaList = []
         imageBuffer = [0, 0]
         for k, imageInfoDict in enumerate(dataset["images"]):
             imagePath = imageInfoDict["path"]
-            image = cv2.imread(imagePath)
+            # image = cv2.imread(imagePath)
+            image = imageReader.read_image_with_calibration(imagePath)
             center = circles[dataset["path"]]["centers"][k, :]
             mask = circles[dataset["path"]]["masks"][k, :]
 
@@ -90,3 +89,6 @@ def Task3c(datasets, circles, max_len=-1, method="sift", display_results=True):
         print(T)
         TList.append(T)
     return TList
+
+
+

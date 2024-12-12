@@ -1,13 +1,15 @@
 import copy
+import os.path
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from functions import detect_largest_circle
+from COMP0241_CV.final.utils import dataset_to_image_pair
+from functions import detect_largest_circle, estimate_depth
 
 
-def Task2a(datasets, max_len=-1, display_results=True):
+def Task2a(datasets, imageReader, display_results=True):
     """
     Determine the Geometric Centre in Images.
 
@@ -18,7 +20,7 @@ def Task2a(datasets, max_len=-1, display_results=True):
         datasets List[{
             "path": str,
             "images": List[Dict{
-                "name": str,
+                "path": str,
                 "frame": int,
                 "fps": float,
                 "timestamp": int,
@@ -40,17 +42,14 @@ def Task2a(datasets, max_len=-1, display_results=True):
     alpha = 0.9
 
     for dataset in datasets:
-        dataset = copy.copy(dataset)
-        if 0 < max_len < len(dataset["images"]):
-            dataset["images"] = dataset["images"][:max_len]
-
         circleList = []
         maskList = []
         historyCircle = [0, 0, 0]
         for imageDict in dataset["images"]:
             imagePath = imageDict["path"]
-            image = cv2.imread(imagePath)
-            circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=display_results)
+            # image = cv2.imread(imagePath)
+            image = imageReader.read_image_with_calibration(imagePath)
+            circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
 
             if circle is None:
                 circleList.append(historyCircle)
@@ -64,16 +63,27 @@ def Task2a(datasets, max_len=-1, display_results=True):
             historyCircle = circle
             mask = np.zeros_like(image[:, :, 0])
             cv2.circle(mask, (circle[0], circle[1]), circle[2], 255, thickness=-1)
+            mask[mask == 255] = 1
             circleList.append(historyCircle)
             maskList.append(mask)
 
             if display_results:
                 cv2.circle(image, (historyCircle[0], historyCircle[1]), 4, (0, 0, 255), 3)
 
-                plt.title("Geometric Centre")
+                plt.figure(figsize=(10, 5))
+                plt.subplot(1, 2, 1)
+                plt.title("Detected Circle")
                 plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
                 plt.axis("off")
+
+                plt.subplot(1, 2, 2)
+                plt.title("Binary Mask of Circle")
+                plt.imshow(mask, cmap="gray")
+                plt.axis("off")
+
+                plt.tight_layout()
                 plt.show()
+
         circles[dataset["path"]] = {
             "centers": np.array(circleList),  # [N, 3]
             "masks": np.array(maskList)
@@ -120,3 +130,77 @@ def Task2b(circles):
 
         print(f"X: max {np.max(cX)}, min {np.min(cX)}, amplitude {np.max(cX) - np.min(cX)}")
         print(f"Y: max {np.max(cY)}, min {np.min(cY)}, amplitude {np.max(cY) - np.min(cY)}")
+
+
+def Task2c(datasets, circles, imageReader, display_results=True):
+    """
+    Estimate the AO's Height Above Ground.
+
+    Use appropriate methods to estimate the vertical distance from
+    the AO's lowest point to the ground plane(in meters).
+
+    Returns:
+
+    """
+    pairDatasets = dataset_to_image_pair(datasets, circles)
+    for pairDataset in pairDatasets:
+        leftImages = pairDataset["left"]
+        rightImages = pairDataset["right"]
+        depths = []
+        for i in range(len(leftImages)):
+            leftImagePath = leftImages[i]["path"]
+            rightImagePath = rightImages[i]["path"]
+
+            leftImage = imageReader.read_image_with_calibration(leftImagePath)
+            rightImage = imageReader.read_image_with_calibration(rightImagePath)
+
+            leftMask = copy.copy(pairDataset["left_circle"]["masks"][i])
+
+            lCY = pairDataset["left_circle"]["centers"][i][1]
+            rCY = pairDataset["right_circle"]["centers"][i][1]
+
+            H = leftImage.shape[0]
+
+            deltaY = (lCY - rCY)
+            if deltaY < 0:
+                deltaY = -deltaY
+                leftImage = leftImage[:H - deltaY, :, :]
+                rightImage = rightImage[deltaY:, :, :]
+                leftMask = leftMask[:H - deltaY, :]
+            elif deltaY > 0:
+                rightImage = rightImage[:H - deltaY, :, :]
+                leftImage = leftImage[deltaY:, :, :]
+                leftMask = leftMask[deltaY:, :]
+
+            stereo = cv2.StereoSGBM_create(
+                minDisparity=1,
+                numDisparities=64,
+                blockSize=7,
+                P1=8 * 3 * 7 ** 2,
+                P2=32 * 3 * 7 ** 2,
+                disp12MaxDiff=10,
+                uniquenessRatio=2,
+                speckleWindowSize=50,
+                speckleRange=16
+            )
+
+            disparity = stereo.compute(leftImage, rightImage).astype(np.float32) / 16.0
+
+            disp = disparity * leftMask
+            f = imageReader.fy
+            B = 2
+            depth = f * B / (disp + 1)
+            depth = depth * leftMask
+            depths.append(np.mean(depth[depth != f * B]))
+
+            if display_results:
+                plt.title('Estimated Disparity')
+                plt.imshow((disparity - disparity.min()) / (disparity.max() - disparity.min()), cmap='gray')
+                plt.axis("off")
+                plt.show()
+
+                plt.title('Masked depth')
+                plt.imshow(depth / np.max(depth), cmap='gray')
+                plt.axis("off")
+                plt.show()
+        print(f"Average Depth: {np.mean(depths)}")
