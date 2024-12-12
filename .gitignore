@@ -1,0 +1,5 @@
+**/final/**/*.png
+**/final/**/*.jpg
+**/final/**/*.mp4
+**/.idea/
+**/__pycache__/
