@@ -169,12 +169,15 @@ def Task2b(circles, display_results=True):
     return circles
 
 
-def Task2c(datasets, circles, imageReader, display_results=True):
+def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
     """
     Estimate the AO's Height Above Ground.
 
     Use appropriate methods to estimate the vertical distance from
     the AO's lowest point to the ground plane(in meters).
+
+    Args:
+        distOfcams (float): The distance between 2 cameras.
 
     Returns:
         List[List[float]]: Depth of each image.
@@ -204,7 +207,6 @@ def Task2c(datasets, circles, imageReader, display_results=True):
                 leftImage = leftImage[:-deltaY, :, :]
                 rightImage = rightImage[deltaY:, :, :]
                 mask = rightMask[deltaY:, :]
-                print("yes")
             elif deltaY > 0:
                 rightImage = rightImage[:-deltaY, :, :]
                 leftImage = leftImage[deltaY:, :, :]
@@ -225,10 +227,9 @@ def Task2c(datasets, circles, imageReader, display_results=True):
 
             disp = disparity * mask
             f = imageReader.fy
-            B = 2
-            depth = f * B / (disp + 1)
+            depth = f * distOfcams / (disp + 1)
             depth = depth * mask
-            depths.append(np.mean(depth[depth != f * B]))
+            depths.append(np.mean(depth[depth != f * distOfcams]))
 
             if display_results:
                 plt.title('Estimated Disparity')
