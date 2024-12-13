@@ -3,3 +3,12 @@
 **/final/**/*.mp4
 **/.idea/
 **/__pycache__/
+
+!**/final/dataset/dual_cam/G1/left/20241210140906312934.png
+!**/final/dataset/dual_cam/G1/right/20241210140906312934.png
+!**/final/dataset/dual_cam/G2/left/20241210140949095496.png
+!**/final/dataset/dual_cam/G2/right/20241210140949095496.png
+!**/final/dataset/dual_cam/2/left/frame_00712.jpg
+!**/final/dataset/dual_cam/2/right/frame_00712.jpg
+!**/final/dataset/dual_cam/6/left/frame_00712.jpg
+!**/final/dataset/dual_cam/6/right/frame_00712.jpg

@@ -14,9 +14,10 @@ if __name__ == "__main__":
     datasets = get_datasets(paths, max_len=1000)
 
     circles = Task2a(datasets, imageReader, display_results=False)
-    Task2b(circles)
+    circles = Task2b(circles, display_results=True)
 
-    # Task2c(datasets, circles, imageReader, display_results=False)
+    # depthList = Task2c(datasets, circles, imageReader, display_results=True)
+    # print(depthList)
 
     # TList = Task3c_rotate(datasets, circles, imageReader, display_results=False)
     # print(TList)

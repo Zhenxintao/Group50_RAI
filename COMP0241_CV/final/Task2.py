@@ -40,8 +40,8 @@ def Task2a(datasets, imageReader, display_results=True):
         }: The circle center, radius and masks for each image.
     """
     circles = {}
-    radiusThreshold = 50
-    distThreshold = 18
+    radiusThreshold = 10
+    distThreshold = 35
 
     for dataset in datasets:
         circleList = []
@@ -50,8 +50,8 @@ def Task2a(datasets, imageReader, display_results=True):
         for imageDict in dataset["images"]:
             imagePath = imageDict["path"]
             image = imageReader.read_image_with_calibration(imagePath)
-            # circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=True)
-            circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
+            circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
+            # circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
 
             if circle is None:
                 circle = historyCircle
@@ -63,7 +63,7 @@ def Task2a(datasets, imageReader, display_results=True):
                 circle = historyCircle
             historyCircle = circle
             mask = np.zeros_like(image[:, :, 0])
-            cv2.circle(mask, (circle[0], circle[1]), circle[2], 255, thickness=-1)
+            cv2.circle(mask, (historyCircle[0], historyCircle[1]), historyCircle[2], 255, thickness=-1)
             mask[mask == 255] = 1
             circleList.append(historyCircle)
             maskList.append(mask)
@@ -92,7 +92,7 @@ def Task2a(datasets, imageReader, display_results=True):
     return circles
 
 
-def Task2b(circles):
+def Task2b(circles, display_results=True):
     """
     Assess the Movement of the Centre Over Time.
 
@@ -107,11 +107,22 @@ def Task2b(circles):
                     "masks": ndarray,
                 }
             }
+        display_results (bool)
+
+    Returns:
+        Dict{
+            path (str): {
+                "centers": ndarray,
+                "masks": ndarray,
+            }
+        }
     """
+    circles = copy.copy(circles)
     for path, circle in circles.items():
         center = circle["centers"]
         cX = center[:, 0]
         cY = center[:, 1]
+        cR = center[:, 2]
 
         A = 1
         H = 1
@@ -121,28 +132,41 @@ def Task2b(circles):
 
         ncX = kalman_filter(cX, A, H, Q, R, P0)
         ncY = kalman_filter(cY, A, H, Q, R, P0)
+        ncR = kalman_filter(cR, A, H, Q, R, P0)
 
         ncX = kalman_filter(ncX, A, H, Q, R, P0)
         ncY = kalman_filter(ncY, A, H, Q, R, P0)
+        ncR = kalman_filter(ncR, A, H, Q, R, P0)
 
-        plt.figure(figsize=(10, 5))
-        plt.subplot(1, 2, 1)
-        plt.title('x')
-        plt.plot(cX)
-        plt.plot(ncX)
+        if display_results:
+            plt.figure(figsize=(15, 5))
+            plt.subplot(1, 3, 1)
+            plt.title('x')
+            plt.plot(cX)
+            plt.plot(ncX)
 
-        plt.subplot(1, 2, 2)
-        plt.title('y')
-        plt.plot(cY)
-        plt.plot(ncY)
-        plt.show()
+            plt.subplot(1, 3, 2)
+            plt.title('y')
+            plt.plot(cY)
+            plt.plot(ncY)
 
-        plt.title('traj')
-        plt.plot(ncX, ncY)
-        plt.show()
+            plt.subplot(1, 3, 3)
+            plt.title('r')
+            plt.plot(cR)
+            plt.plot(ncR)
+            plt.show()
+
+            plt.title('traj')
+            plt.plot(ncX, ncY)
+            plt.show()
 
         print(f"X: max {np.max(cX)}, min {np.min(cX)}, amplitude {np.max(cX) - np.min(cX)}")
         print(f"Y: max {np.max(cY)}, min {np.min(cY)}, amplitude {np.max(cY) - np.min(cY)}")
+
+        circles[path]["centers"][:, 0] = ncX
+        circles[path]["centers"][:, 1] = ncY
+        circles[path]["centers"][:, 2] = ncR
+    return circles
 
 
 def Task2c(datasets, circles, imageReader, display_results=True):
@@ -156,6 +180,7 @@ def Task2c(datasets, circles, imageReader, display_results=True):
         float: depth
     """
     pairDatasets = dataset_to_image_pair(datasets, circles)
+    depthList = []
     for pairDataset in pairDatasets:
         leftImages = pairDataset["left"]
         rightImages = pairDataset["right"]
@@ -168,22 +193,22 @@ def Task2c(datasets, circles, imageReader, display_results=True):
             rightImage = imageReader.read_image_with_calibration(rightImagePath)
 
             leftMask = copy.copy(pairDataset["left_circle"]["masks"][i])
+            rightMask = copy.copy(pairDataset["right_circle"]["masks"][i])
 
             lCY = pairDataset["left_circle"]["centers"][i][1]
             rCY = pairDataset["right_circle"]["centers"][i][1]
 
-            H = leftImage.shape[0]
-
             deltaY = (lCY - rCY)
             if deltaY < 0:
                 deltaY = -deltaY
-                leftImage = leftImage[:H - deltaY, :, :]
+                leftImage = leftImage[:-deltaY, :, :]
                 rightImage = rightImage[deltaY:, :, :]
-                leftMask = leftMask[:H - deltaY, :]
+                mask = rightMask[deltaY:, :]
+                print("yes")
             elif deltaY > 0:
-                rightImage = rightImage[:H - deltaY, :, :]
+                rightImage = rightImage[:-deltaY, :, :]
                 leftImage = leftImage[deltaY:, :, :]
-                leftMask = leftMask[deltaY:, :]
+                mask = leftMask[deltaY:, :]
 
             stereo = cv2.StereoSGBM_create(
                 minDisparity=1,
@@ -196,14 +221,13 @@ def Task2c(datasets, circles, imageReader, display_results=True):
                 speckleWindowSize=50,
                 speckleRange=16
             )
-
             disparity = stereo.compute(leftImage, rightImage).astype(np.float32) / 16.0
 
-            disp = disparity * leftMask
+            disp = disparity * mask
             f = imageReader.fy
             B = 2
             depth = f * B / (disp + 1)
-            depth = depth * leftMask
+            depth = depth * mask
             depths.append(np.mean(depth[depth != f * B]))
 
             if display_results:
@@ -217,4 +241,5 @@ def Task2c(datasets, circles, imageReader, display_results=True):
                 plt.axis("off")
                 plt.show()
         print(f"Average Depth: {np.mean(depths)}")
-        return np.mean(depths)
+        depthList.append(np.mean(depths))
+    return depthList
