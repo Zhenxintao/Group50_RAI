@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-from functions import cal_omega, detect_outliers, detect_largest_circle, cal_omega_any_view
+from functions import cal_omega, detect_outliers_1d, detect_largest_circle, cal_omega_any_view
 
 
 def Task3b():
@@ -87,7 +87,7 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
             timeList.append(time.time() - start)
             thetaList.append(theta)
         thetaList = np.array(thetaList)
-        thetaList, _ = detect_outliers(thetaList)
+        thetaList, _ = detect_outliers_1d(thetaList)
         T = 2 * np.pi / np.mean(thetaList)
         TList.append(T)
     print(f"Average time for one frame: {np.mean((np.array(timeList)))}")

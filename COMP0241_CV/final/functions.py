@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+from COMP0241_CV.final.ransac import fit_circle_ransac, fit_circle_by_least_squares
+
 
 def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius=0, max_radius=0,
                           display_results=True):
@@ -24,7 +26,29 @@ def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius
         int: The radius of the largest circle if detected, otherwise None.
     """
     image = copy.copy(image)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    #
+    # lower_blue = np.array([101, 100, 50])
+    # upper_blue = np.array([170, 255, 255])
+    # segMask = cv2.inRange(hsv, lower_blue, upper_blue)
+    #
+    # y, x = np.where(segMask)
+    # points = np.array(list(zip(x, y)))
+    # points, _ = detect_outliers_2d(points)
+    # print(points.shape)
+    #
+    # center, radius = fit_circle_by_least_squares(points)
+    # center, radius = fit_circle_ransac(points, 1000, 0.9)
+
+    # bestCircle, _ = ransac_circle_fit(points)
+    # print(center)
+    # bestCircle = [center[0], center[1], radius]
+    # cv2.circle(image, (bestCircle[0], bestCircle[1]), radius, (0, 255, 0), 4)
+    # cv2.imshow("ransac", image)
+
+    gray = copy.copy(image[:, :, 1])
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
 
     circles = cv2.HoughCircles(
@@ -42,11 +66,13 @@ def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius
         circles = np.int16(np.around(circles))
         largest_circle = max(circles[0, :], key=lambda x: x[2])
         mask = np.zeros_like(gray)
+        # largest_circle[0], largest_circle[1] = bestCircle[0], bestCircle[1]
         cv2.circle(mask, (largest_circle[0], largest_circle[1]), largest_circle[2], 255, thickness=-1)
         mask[mask == 255] = 1
 
         if display_results:
-            cv2.circle(image, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 255, 0), 4)
+            # cv2.circle(image, (bestCircle[0], bestCircle[1]), largest_circle[2], (0, 255, 0), 4)
+            cv2.circle(image, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 4)
             cv2.circle(image, (largest_circle[0], largest_circle[1]), 2, (0, 0, 255), 3)
 
             plt.figure(figsize=(10, 5))
@@ -69,12 +95,23 @@ def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius
         return None
 
 
-def gaussian_kernel(size=5, sigma=1):
-    """生成高斯核函数"""
-    kernel = np.linspace(-(size // 2), size // 2, size)
-    kernel = np.exp(-0.5 * (kernel / sigma) ** 2)
-    kernel = kernel / kernel.sum()  # 归一化
-    return kernel
+def kalman_filter(observations, A, H, Q, R, P0):
+    n = len(observations)
+    estimates = np.zeros(n)
+
+    x = observations[0]
+    P = P0
+
+    for i in range(n):
+        x_pred = A * x
+        P_pred = A * P * A + Q
+
+        K = P_pred * H / (H * P_pred * H + R)
+        x = x_pred + K * (observations[i] - H * x_pred)
+        P = (1 - K * H) * P_pred
+
+        estimates[i] = x
+    return estimates
 
 
 def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
@@ -141,12 +178,12 @@ def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
     return kptsPairs
 
 
-def detect_outliers(data, threshold=3):
+def detect_outliers_1d(data, threshold=3):
     """
     Detect the outliers and filter the data.
 
     Args:
-        data (ndarray)
+        data (ndarray): [N]
         threshold (int)
 
     Returns:
@@ -163,6 +200,30 @@ def detect_outliers(data, threshold=3):
             outliers.append(value)
         else:
             filteredData.append(value)
+    return np.array(filteredData), np.array(outliers)
+
+
+def detect_outliers_2d(data, threshold=3):
+    """
+    Detect the outliers and filter the data.
+
+    Args:
+        data (ndarray): [N, 2]
+        threshold (int)
+
+    Returns:
+        ndarray: filtered data
+        ndarray: outliers
+    """
+    mean = np.mean(data, axis=0)
+    std_dev = np.std(data, axis=0)
+
+    outMaskX = np.abs(data[:, 0] - mean[0]) > threshold * std_dev[0]
+    outMaskY = np.abs(data[:, 1] - mean[1]) > threshold * std_dev[1]
+    outMask = np.logical_or(outMaskX, outMaskY)
+
+    outliers = data[outMask]
+    filteredData = data[~outMask]
     return np.array(filteredData), np.array(outliers)
 
 
@@ -198,7 +259,7 @@ def cal_rotate_degree(imgDict1, imgDict2, kptsPairs):
     sin = np.cross(kvecs1, kvecs2.T) / (np.linalg.norm(kvecs1) * np.linalg.norm(kvecs2))
     theta = np.arctan2(sin, cos)
 
-    theta, _ = detect_outliers(theta)
+    theta, _ = detect_outliers_1d(theta)
     return theta
 
 

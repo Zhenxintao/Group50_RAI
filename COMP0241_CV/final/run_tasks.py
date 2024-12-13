@@ -11,7 +11,7 @@ if __name__ == "__main__":
         # "dataset/dual_cam/G1/left",
         # "dataset/dual_cam/G1/right",
     ]
-    datasets = get_datasets(paths, max_len=2000)
+    datasets = get_datasets(paths, max_len=1000)
 
     circles = Task2a(datasets, imageReader, display_results=False)
     Task2b(circles)

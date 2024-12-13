@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import convolve
 
 from COMP0241_CV.final.utils import dataset_to_image_pair
-from functions import detect_largest_circle, gaussian_kernel
+from functions import detect_largest_circle, kalman_filter
 
 
 def Task2a(datasets, imageReader, display_results=True):
@@ -40,9 +40,8 @@ def Task2a(datasets, imageReader, display_results=True):
         }: The circle center, radius and masks for each image.
     """
     circles = {}
-    radiusThreshold = 100
-    distThreshold = 20
-    alpha = 0.9
+    radiusThreshold = 50
+    distThreshold = 18
 
     for dataset in datasets:
         circleList = []
@@ -50,9 +49,8 @@ def Task2a(datasets, imageReader, display_results=True):
         historyCircle = [0, 0, 0]
         for imageDict in dataset["images"]:
             imagePath = imageDict["path"]
-            # image = cv2.imread(imagePath)
             image = imageReader.read_image_with_calibration(imagePath)
-            # circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
+            # circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=True)
             circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
 
             if circle is None:
@@ -115,13 +113,17 @@ def Task2b(circles):
         cX = center[:, 0]
         cY = center[:, 1]
 
-        kernel = gaussian_kernel()
-        ncX = np.convolve(cX, kernel, mode='same')
-        ncY = np.convolve(cY, kernel, mode='same')
-        ncX[:2] = cX[:2]
-        ncY[:2] = cY[:2]
-        ncX[-2:] = cX[-2:]
-        ncY[-2:] = cY[-2:]
+        A = 1
+        H = 1
+        Q = 1e-5
+        R = 1e-3
+        P0 = 0.3
+
+        ncX = kalman_filter(cX, A, H, Q, R, P0)
+        ncY = kalman_filter(cY, A, H, Q, R, P0)
+
+        ncX = kalman_filter(ncX, A, H, Q, R, P0)
+        ncY = kalman_filter(ncY, A, H, Q, R, P0)
 
         plt.figure(figsize=(10, 5))
         plt.subplot(1, 2, 1)
@@ -136,7 +138,7 @@ def Task2b(circles):
         plt.show()
 
         plt.title('traj')
-        plt.plot(cX, cY)
+        plt.plot(ncX, ncY)
         plt.show()
 
         print(f"X: max {np.max(cX)}, min {np.min(cX)}, amplitude {np.max(cX) - np.min(cX)}")
