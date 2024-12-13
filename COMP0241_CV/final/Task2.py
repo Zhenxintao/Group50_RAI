@@ -177,7 +177,7 @@ def Task2c(datasets, circles, imageReader, display_results=True):
     the AO's lowest point to the ground plane(in meters).
 
     Returns:
-        float: depth
+        List[List[float]]: Depth of each image.
     """
     pairDatasets = dataset_to_image_pair(datasets, circles)
     depthList = []
@@ -241,5 +241,5 @@ def Task2c(datasets, circles, imageReader, display_results=True):
                 plt.axis("off")
                 plt.show()
         print(f"Average Depth: {np.mean(depths)}")
-        depthList.append(np.mean(depths))
+        depthList.append(depths)
     return depthList

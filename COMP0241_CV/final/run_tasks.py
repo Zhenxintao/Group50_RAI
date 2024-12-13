@@ -8,16 +8,17 @@ if __name__ == "__main__":
 
     paths = [
         "dataset/dual_cam/6/left",
+        "dataset/dual_cam/6/right",
         # "dataset/dual_cam/G1/left",
         # "dataset/dual_cam/G1/right",
     ]
-    datasets = get_datasets(paths, max_len=1000)
+    datasets = get_datasets(paths, max_len=16)
 
     circles = Task2a(datasets, imageReader, display_results=False)
-    circles = Task2b(circles, display_results=True)
+    circles = Task2b(circles, display_results=False)
 
-    # depthList = Task2c(datasets, circles, imageReader, display_results=True)
-    # print(depthList)
+    depthList = Task2c(datasets, circles, imageReader, display_results=False)
+    print(depthList)
 
     # TList = Task3c_rotate(datasets, circles, imageReader, display_results=False)
     # print(TList)

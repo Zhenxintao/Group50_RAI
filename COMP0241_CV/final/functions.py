@@ -134,29 +134,24 @@ def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
         display_results (bool)
 
     Returns:
-        ndarray: Key point pairs in the first image. [N, 2, 2]
+        ndarray(np.float32): Key point pairs in the first image. [N, 2, 2]
     """
-    img1 = imgDict1["image"]
-    img2 = imgDict2["image"]
+    img1, img2 = imgDict1["image"], imgDict2["image"]
 
-    if method == "sift":
-        sift = cv2.SIFT_create()
-        kpts1, descriptors1 = sift.detectAndCompute(img1, imgDict1["mask"])
-        kpts2, descriptors2 = sift.detectAndCompute(img2, imgDict2["mask"])
-    else:
-        orb = cv2.ORB_create()
-        kpts1, descriptors1 = orb.detectAndCompute(img1, imgDict1["mask"])
-        kpts2, descriptors2 = orb.detectAndCompute(img2, imgDict2["mask"])
+    if method == "sift": matcher = cv2.SIFT_create()
+    else:                matcher = cv2.ORB_create()
+
+    kpts1, descriptors1 = matcher.detectAndCompute(img1, imgDict1["mask"])
+    kpts2, descriptors2 = matcher.detectAndCompute(img2, imgDict2["mask"])
 
     bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
     matches = bf.match(descriptors1, descriptors2)
     matches = sorted(matches, key=lambda x: x.distance)
 
-    matched_img = cv2.drawMatches(
-        img1, kpts1, img2, kpts2, matches[:100], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
-    )
-
     if display_results:
+        matched_img = cv2.drawMatches(
+            img1, kpts1, img2, kpts2, matches[:100], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+        )
         scale_percent = 50
         new_width = int(matched_img.shape[1] * scale_percent / 100)
         new_height = int(matched_img.shape[0] * scale_percent / 100)
@@ -173,9 +168,7 @@ def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
         kpt1 = kpts1[m.queryIdx].pt
         kpt2 = kpts2[m.trainIdx].pt
         kptsPairs.append([kpt1, kpt2])
-
-    kptsPairs = np.array(kptsPairs)
-    return kptsPairs
+    return np.array(kptsPairs, dtype=np.float32)
 
 
 def detect_outliers_1d(data, threshold=3):
@@ -333,18 +326,48 @@ def cal_omega(imgDict1, imgDict2, method="sift", display_results=True):
         display_results (bool)
 
     Returns:
-        float
+        float: Rotation velocity.
     """
     kptsPairs = get_match_pts(imgDict1, imgDict2, method, display_results)
-    theta = cal_rotate_degree(imgDict1, imgDict2, kptsPairs)
-    if "ts" in imgDict1.keys():
-        deltaTime = (imgDict2["ts"] - imgDict1["ts"]) / 1e7
-    else:
-        deltaTime = 1. / imgDict1["fps"]
+    center1 = imgDict1["center"]
+    center2 = imgDict2["center"]
+    kpts1 = kptsPairs[:, 0, :] - center1[:2]
+    kpts2 = kptsPairs[:, 1, :] - center2[:2]
+    src = kpts1[:, np.newaxis, :]
+    trg = kpts2[:, np.newaxis, :]
 
-    # print(theta)
-    omega = np.mean(theta) / deltaTime
-    return omega
+    matrix, mask = cv2.estimateAffinePartial2D(src, trg)
+    rotation_matrix = matrix[:, :2]
+    theta = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0]) * 180 / np.pi
+    # theta = cal_rotate_degree(imgDict1, imgDict2, kptsPairs)
+
+    # points_after = cv2.transform(np.array([kpts1]), matrix)[0]
+    # canvas = np.zeros((800, 1280, 3), dtype=np.uint8)
+    # for point in kpts1:
+    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 255, 0), -1)
+    #
+    # # 绘制目标点
+    # for point in kpts2:
+    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 0, 255), -1)
+    #
+    # # 绘制变换后的点
+    # for point in points_after:
+    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (255, 0, 0), -1)
+    #
+    # # 绘制变换前后的连接线
+    # for p1, p2 in zip(kpts1, points_after):
+    #     cv2.line(canvas, tuple(p1.astype(int)), tuple(p2.astype(int)), (255, 255, 255), 1)
+    #
+    # cv2.imshow("Affine Transform Visualization", canvas)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    if "ts" in imgDict1.keys(): deltaTime = (imgDict2["ts"] - imgDict1["ts"]) / 1e7
+    else:                       deltaTime = 1. / imgDict1["fps"]
+
+    print(theta)
+    print(deltaTime)
+    return np.mean(theta) / deltaTime
 
 
 def cal_omega_any_view(imgDict1, imgDict2, method="sift", display_results=True):

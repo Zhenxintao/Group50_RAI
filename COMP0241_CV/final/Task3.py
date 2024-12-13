@@ -86,6 +86,7 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
             theta = (theta1 + theta2) / 2
             timeList.append(time.time() - start)
             thetaList.append(theta)
+        print(thetaList)
         thetaList = np.array(thetaList)
         thetaList, _ = detect_outliers_1d(thetaList)
         T = 2 * np.pi / np.mean(thetaList)
