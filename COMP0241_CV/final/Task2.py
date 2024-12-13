@@ -4,9 +4,10 @@ import os.path
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.ndimage import convolve
 
 from COMP0241_CV.final.utils import dataset_to_image_pair
-from functions import detect_largest_circle, estimate_depth
+from functions import detect_largest_circle, gaussian_kernel
 
 
 def Task2a(datasets, imageReader, display_results=True):
@@ -17,7 +18,7 @@ def Task2a(datasets, imageReader, display_results=True):
     techniques you used in Task 1 (in pixel coordinate).
 
     Args:
-        datasets List[{
+        datasets (List[Dict{
             "path": str,
             "images": List[Dict{
                 "path": str,
@@ -25,8 +26,10 @@ def Task2a(datasets, imageReader, display_results=True):
                 "fps": float,
                 "timestamp": int,
             }]
-        }]: A list of folder dicts, each has keys "path" and "images",
+        }]): A list of folder dicts, each has keys "path" and "images",
             represent the folder path and a list of image dicts.
+        imageReader (ImageReader)
+        display_results (bool)
 
     Returns:
         Dict{
@@ -38,7 +41,7 @@ def Task2a(datasets, imageReader, display_results=True):
     """
     circles = {}
     radiusThreshold = 100
-    distThreshold = 100
+    distThreshold = 20
     alpha = 0.9
 
     for dataset in datasets:
@@ -49,11 +52,11 @@ def Task2a(datasets, imageReader, display_results=True):
             imagePath = imageDict["path"]
             # image = cv2.imread(imagePath)
             image = imageReader.read_image_with_calibration(imagePath)
-            circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
+            # circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
+            circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
 
             if circle is None:
-                circleList.append(historyCircle)
-                continue
+                circle = historyCircle
 
             if (
                     (np.abs(historyCircle[2] - circle[2]) > radiusThreshold) or
@@ -112,20 +115,28 @@ def Task2b(circles):
         cX = center[:, 0]
         cY = center[:, 1]
 
-        plt.figure(figsize=(15, 5))
-        plt.subplot(1, 3, 1)
+        kernel = gaussian_kernel()
+        ncX = np.convolve(cX, kernel, mode='same')
+        ncY = np.convolve(cY, kernel, mode='same')
+        ncX[:2] = cX[:2]
+        ncY[:2] = cY[:2]
+        ncX[-2:] = cX[-2:]
+        ncY[-2:] = cY[-2:]
+
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 2, 1)
         plt.title('x')
         plt.plot(cX)
+        plt.plot(ncX)
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 2, 2)
         plt.title('y')
         plt.plot(cY)
+        plt.plot(ncY)
+        plt.show()
 
-        plt.subplot(1, 3, 3)
         plt.title('traj')
         plt.plot(cX, cY)
-
-        plt.tight_layout()
         plt.show()
 
         print(f"X: max {np.max(cX)}, min {np.min(cX)}, amplitude {np.max(cX) - np.min(cX)}")
@@ -140,7 +151,7 @@ def Task2c(datasets, circles, imageReader, display_results=True):
     the AO's lowest point to the ground plane(in meters).
 
     Returns:
-
+        float: depth
     """
     pairDatasets = dataset_to_image_pair(datasets, circles)
     for pairDataset in pairDatasets:
@@ -204,3 +215,4 @@ def Task2c(datasets, circles, imageReader, display_results=True):
                 plt.axis("off")
                 plt.show()
         print(f"Average Depth: {np.mean(depths)}")
+        return np.mean(depths)
