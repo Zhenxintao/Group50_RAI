@@ -169,7 +169,7 @@ def Task2b(circles, display_results=True):
     return circles
 
 
-def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
+def Task2c(datasets, circles, imageReader, distOfCams=2, display_results=True):
     """
     Estimate the AO's Height Above Ground.
 
@@ -177,7 +177,10 @@ def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
     the AO's lowest point to the ground plane(in meters).
 
     Args:
-        distOfcams (float): The distance between 2 cameras.
+        datasets:
+        circles:
+        imageReader:
+        distOfCams (float): The distance between 2 cameras.
 
     Returns:
         List[List[float]]: Depth of each image.
@@ -195,8 +198,8 @@ def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
             leftImage = imageReader.read_image_with_calibration(leftImagePath)
             rightImage = imageReader.read_image_with_calibration(rightImagePath)
 
-            leftMask = copy.copy(pairDataset["left_circle"]["masks"][i])
-            rightMask = copy.copy(pairDataset["right_circle"]["masks"][i])
+            leftMask = pairDataset["left_circle"]["masks"][i]
+            rightMask = pairDataset["right_circle"]["masks"][i]
 
             lCY = pairDataset["left_circle"]["centers"][i][1]
             rCY = pairDataset["right_circle"]["centers"][i][1]
@@ -206,11 +209,13 @@ def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
                 deltaY = -deltaY
                 leftImage = leftImage[:-deltaY, :, :]
                 rightImage = rightImage[deltaY:, :, :]
-                mask = rightMask[deltaY:, :]
+                mask = leftMask[:-deltaY, :]
             elif deltaY > 0:
                 rightImage = rightImage[:-deltaY, :, :]
                 leftImage = leftImage[deltaY:, :, :]
                 mask = leftMask[deltaY:, :]
+            else:
+                mask = leftMask
 
             stereo = cv2.StereoSGBM_create(
                 minDisparity=1,
@@ -227,9 +232,9 @@ def Task2c(datasets, circles, imageReader, distOfcams=2, display_results=True):
 
             disp = disparity * mask
             f = imageReader.fy
-            depth = f * distOfcams / (disp + 1)
+            depth = f * distOfCams / (disp + 1)
             depth = depth * mask
-            depths.append(np.mean(depth[depth != f * distOfcams]))
+            depths.append(np.mean(depth[depth != f * distOfCams]))
 
             if display_results:
                 plt.title('Estimated Disparity')

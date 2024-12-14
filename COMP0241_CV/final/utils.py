@@ -61,6 +61,7 @@ def get_datasets(paths, max_len=-1):
     datasets = []
     for path in paths:
         imageList = get_images_in_folder(path)
+
         if 0 < max_len < len(imageList):
             imageList = imageList[:max_len]
 

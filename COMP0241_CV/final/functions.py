@@ -5,8 +5,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from COMP0241_CV.final.ransac import fit_circle_ransac, fit_circle_by_least_squares
-
 
 def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius=0, max_radius=0,
                           display_results=True):
@@ -26,29 +24,7 @@ def detect_largest_circle(image, min_dist=500, param1=100, param2=20, min_radius
         int: The radius of the largest circle if detected, otherwise None.
     """
     image = copy.copy(image)
-
-    # hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    #
-    # lower_blue = np.array([101, 100, 50])
-    # upper_blue = np.array([170, 255, 255])
-    # segMask = cv2.inRange(hsv, lower_blue, upper_blue)
-    #
-    # y, x = np.where(segMask)
-    # points = np.array(list(zip(x, y)))
-    # points, _ = detect_outliers_2d(points)
-    # print(points.shape)
-    #
-    # center, radius = fit_circle_by_least_squares(points)
-    # center, radius = fit_circle_ransac(points, 1000, 0.9)
-
-    # bestCircle, _ = ransac_circle_fit(points)
-    # print(center)
-    # bestCircle = [center[0], center[1], radius]
-    # cv2.circle(image, (bestCircle[0], bestCircle[1]), radius, (0, 255, 0), 4)
-    # cv2.imshow("ransac", image)
-
     gray = copy.copy(image[:, :, 1])
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
 
     circles = cv2.HoughCircles(
@@ -114,7 +90,7 @@ def kalman_filter(observations, A, H, Q, R, P0):
     return estimates
 
 
-def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
+def get_match_pts(imgDict1, imgDict2, matcher, display_results=True):
     """
     Get match points between 2 images with a mask
     to control the matching range
@@ -130,16 +106,13 @@ def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
                 "center": ndarray,
                 "mask": ndarray,
             }): Information about the second image.
-        method (str): "sift" or "ord"
+        matcher (cv2.SIFT | cv2.ORB):
         display_results (bool)
 
     Returns:
         ndarray(np.float32): Key point pairs in the first image. [N, 2, 2]
     """
     img1, img2 = imgDict1["image"], imgDict2["image"]
-
-    if method == "sift": matcher = cv2.SIFT_create()
-    else:                matcher = cv2.ORB_create()
 
     kpts1, descriptors1 = matcher.detectAndCompute(img1, imgDict1["mask"])
     kpts2, descriptors2 = matcher.detectAndCompute(img2, imgDict2["mask"])
@@ -163,11 +136,7 @@ def get_match_pts(imgDict1, imgDict2, method="sift", display_results=True):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    kptsPairs = []
-    for m in matches:
-        kpt1 = kpts1[m.queryIdx].pt
-        kpt2 = kpts2[m.trainIdx].pt
-        kptsPairs.append([kpt1, kpt2])
+    kptsPairs = [[kpts1[m.queryIdx].pt, kpts2[m.trainIdx].pt] for m in matches]
     return np.array(kptsPairs, dtype=np.float32)
 
 
@@ -220,42 +189,6 @@ def detect_outliers_2d(data, threshold=3):
     return np.array(filteredData), np.array(outliers)
 
 
-def cal_rotate_degree(imgDict1, imgDict2, kptsPairs):
-    """
-    Calculate the rotate degree of matched points between 2 images.
-    
-    Args:
-        imgDict1: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the first image.
-        imgDict2: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the second image.
-        kptsPairs (ndarray): [N, 2, 2]
-
-    Returns:
-        ndarray: The rotate degree of matched points without outliers.
-    """
-    center1 = imgDict1["center"]
-    center2 = imgDict2["center"]
-    kpts1 = kptsPairs[:, 0, :]
-    kpts2 = kptsPairs[:, 1, :]
-    kvecs1 = np.array([kpts1[:, 0] - center1[0], kpts1[:, 1] - center1[1]]).T
-    kvecs2 = np.array([kpts2[:, 0] - center2[0], kpts2[:, 1] - center2[1]])
-
-    cos = np.dot(kvecs1, kvecs2) / (np.linalg.norm(kvecs1) * np.linalg.norm(kvecs2))
-    cos = np.diagonal(cos)
-    sin = np.cross(kvecs1, kvecs2.T) / (np.linalg.norm(kvecs1) * np.linalg.norm(kvecs2))
-    theta = np.arctan2(sin, cos)
-
-    theta, _ = detect_outliers_1d(theta)
-    return theta
-
-
 def cal_theta_any_view(imgDict1, imgDict2, kptsPairs, elevation=0):
     """
     Calculate the rotation degree of matched points between 2 images
@@ -273,6 +206,7 @@ def cal_theta_any_view(imgDict1, imgDict2, kptsPairs, elevation=0):
                 "mask": ndarray,
             }): Information about the second image.
         kptsPairs (ndarray): [N, 2, 2]
+        elevation (float): Degree of the elevation
 
     Returns:
         ndarray: The rotate degree of matched points without outliers.
@@ -308,7 +242,92 @@ def cal_theta_any_view(imgDict1, imgDict2, kptsPairs, elevation=0):
     return theta
 
 
-def cal_omega(imgDict1, imgDict2, method="sift", display_results=True):
+def crop_two_img(imgDict1, imgDict2):
+    """
+    Crop two frame by finding the minimum bound.
+
+    Args:
+        imgDict1:
+        imgDict2:
+
+    Returns:
+        Dict{
+            "image": ndarray,
+            "center": ndarray,
+            "mask": ndarray,
+        }: Cropped imgDict1.
+        Dict{
+            "image": ndarray,
+            "center": ndarray,
+            "mask": ndarray,
+        }: Cropped imgDict2.
+    """
+    imgDict1, imgDict2 = copy.deepcopy(imgDict1), copy.deepcopy(imgDict2)
+    c1 = imgDict1["center"]
+    c2 = imgDict2["center"]
+
+    H, W = imgDict1["image"].shape[:2]
+    wBound1 = min(c1[0] - c1[2], W - c1[0] - c1[2])
+    wBound2 = min(c2[0] - c2[2], W - c2[0] - c2[2])
+    wb = int(min(wBound1, wBound2))
+
+    hBound1 = min(c1[1] - c1[2], H - c1[1] - c1[2])
+    hBound2 = min(c2[1] - c2[2], H - c2[1] - c2[2])
+    hb = int(min(hBound1, hBound2))
+
+    imgDict1["image"] = imgDict1["image"][hb:-hb, wb:-wb, :]
+    imgDict2["image"] = imgDict2["image"][hb:-hb, wb:-wb, :]
+    imgDict1["mask"] = imgDict1["mask"][hb:-hb, wb:-wb]
+    imgDict2["mask"] = imgDict2["mask"][hb:-hb, wb:-wb]
+    imgDict1["center"][:2] -= [wb, hb]
+    imgDict2["center"][:2] -= [wb, hb]
+    return imgDict1, imgDict2
+
+
+def get_rot_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
+    """
+    Calculate rotation matrix by matched key points and cv2.estimateAffinePartial2D
+
+    Args:
+        imgDict1:
+        imgDict2:
+        kptsPairs (ndarray): Key point pairs in the first image. [N, 2, 2]
+        display_results (bool)
+
+    Returns:
+        ndarray: Rotation matrix. [2, 2]
+    """
+    c1 = imgDict1["center"]
+    c2 = imgDict2["center"]
+    kpts1 = kptsPairs[:, 0, :] - c1[:2]
+    kpts2 = kptsPairs[:, 1, :] - c2[:2]
+    src = kpts1[:, np.newaxis, :]
+    trg = kpts2[:, np.newaxis, :]
+
+    matrix, _ = cv2.estimateAffinePartial2D(src, trg)
+    if display_results:
+        kpts3 = cv2.transform(np.array([kpts1]), matrix)[0]
+        img1 = copy.copy(imgDict1["image"])
+        img2 = copy.copy(imgDict2["image"])
+        canvas = img1 // 2 + img2 // 2
+        kpts1 = kpts1 + c1[:2]
+        kpts2 = kpts2 + c2[:2]
+        kpts3 = kpts3 + c2[:2]
+
+        for point in kpts1: cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 255, 0), -1)
+        for point in kpts2: cv2.circle(canvas, tuple(point.astype(int)), 2, (0, 0, 255), -1)
+        for point in kpts3: cv2.circle(canvas, tuple(point.astype(int)), 1, (255, 0, 0), -1)
+
+        for p1, p2 in zip(kpts1, kpts3):
+            cv2.line(canvas, tuple(p1.astype(int)), tuple(p2.astype(int)), (255, 255, 255), 1)
+
+        cv2.imshow("Affine Transform Visualization", canvas)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    return matrix[:, :2]
+
+
+def cal_omega(imgDict1, imgDict2, matcher, display_results=True):
     """
     Calculate the OA's rotation velocity by given two image.
     Args:
@@ -322,57 +341,55 @@ def cal_omega(imgDict1, imgDict2, method="sift", display_results=True):
                 "center": ndarray,
                 "mask": ndarray,
             }): Information about the second image.
-        method (str): "sift" or "ord"
+        matcher (cv2.SIFT | cv2.ORB):
         display_results (bool)
 
     Returns:
         float: Rotation velocity.
     """
-    kptsPairs = get_match_pts(imgDict1, imgDict2, method, display_results)
-    center1 = imgDict1["center"]
-    center2 = imgDict2["center"]
-    kpts1 = kptsPairs[:, 0, :] - center1[:2]
-    kpts2 = kptsPairs[:, 1, :] - center2[:2]
-    src = kpts1[:, np.newaxis, :]
-    trg = kpts2[:, np.newaxis, :]
+    imgD1, imgD2 = crop_two_img(imgDict1, imgDict2)
+    kptsPairs = get_match_pts(imgD1, imgD2, matcher, display_results)
+    rotMat = get_rot_mat(imgD1, imgD2, kptsPairs, display_results)
+    theta = np.arctan2(rotMat[1, 0], rotMat[0, 0])
 
-    matrix, mask = cv2.estimateAffinePartial2D(src, trg)
-    rotation_matrix = matrix[:, :2]
-    theta = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0]) * 180 / np.pi
-    # theta = cal_rotate_degree(imgDict1, imgDict2, kptsPairs)
-
-    # points_after = cv2.transform(np.array([kpts1]), matrix)[0]
-    # canvas = np.zeros((800, 1280, 3), dtype=np.uint8)
-    # for point in kpts1:
-    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 255, 0), -1)
-    #
-    # # 绘制目标点
-    # for point in kpts2:
-    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 0, 255), -1)
-    #
-    # # 绘制变换后的点
-    # for point in points_after:
-    #     cv2.circle(canvas, tuple(point.astype(int)), 3, (255, 0, 0), -1)
-    #
-    # # 绘制变换前后的连接线
-    # for p1, p2 in zip(kpts1, points_after):
-    #     cv2.line(canvas, tuple(p1.astype(int)), tuple(p2.astype(int)), (255, 255, 255), 1)
-    #
-    # cv2.imshow("Affine Transform Visualization", canvas)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    if "ts" in imgDict1.keys(): deltaTime = (imgDict2["ts"] - imgDict1["ts"]) / 1e7
-    else:                       deltaTime = 1. / imgDict1["fps"]
-
-    print(theta)
-    print(deltaTime)
-    return np.mean(theta) / deltaTime
+    if "ts" in imgD1.keys(): t = (imgD2["ts"] - imgD1["ts"]) / 1e6
+    else:                    t = 1. / imgD1["fps"]
+    return theta / (t + 1e-9)
 
 
-def cal_omega_any_view(imgDict1, imgDict2, method="sift", display_results=True):
+def warm_up(datasets, circles, imageReader, matcher):
+    """
+    Run the matcher.detectAndCompute() function in cal_omega() in advance
+    to address the time-consuming issue during the first execution.
+
+    Args:
+        datasets:
+        circles:
+        imageReader:
+        matcher:
+    """
+    imgP = datasets[0]["images"][0]["path"]
+    image = imageReader.read_image_with_calibration(imgP)
+    center = circles[datasets[0]["path"]]["centers"][0, :]
+    mask = circles[datasets[0]["path"]]["masks"][0, :]
+
+    imgD = {
+        "image": image,
+        "center": center,
+        "mask": mask,
+    }
+    if "timestamp" in datasets[0]["images"][0].keys():
+        imgD["ts"] = datasets[0]["images"][0]["timestamp"]
+    else:
+        imgD["fps"] = datasets[0]["images"][0]["fps"]
+    imgD = copy.deepcopy(imgD)
+    cal_omega(imgD, imgD, matcher, False)
+
+
+def cal_omega_any_view(imgDict1, imgDict2, matcher, elevation=1, display_results=True):
     """
     Calculate the OA's rotation velocity by given two image from any view.
+
     Args:
         imgDict1: (Dict{
                 "image": ndarray,
@@ -384,31 +401,13 @@ def cal_omega_any_view(imgDict1, imgDict2, method="sift", display_results=True):
                 "center": ndarray,
                 "mask": ndarray,
             }): Information about the second image.
-        method (str): "sift" or "ord"
-        display_results (bool)
+        matcher (cv2.SIFT | cv2.ORB)
+        elevation (float)
 
     Returns:
         float
     """
-    kptsPairs = get_match_pts(imgDict1, imgDict2, method, display_results)
-    theta = cal_theta_any_view(imgDict1, imgDict2, kptsPairs)
-
-    if "ts" in imgDict1.keys():
-        deltaTime = (imgDict2["ts"] - imgDict1["ts"]) / 1e7
-    else:
-        deltaTime = 1. / imgDict1["fps"]
-
-    # print(deltaTime)
-    # vel = np.mean(s) / deltaTime
-    # # print(vel)
-    # return vel
-    pNum = len(theta[theta > 0])
-    nNum = len(theta[theta < 0])
-
-    if pNum > nNum:
-        theta = theta[theta > 0]
-    else:
-        theta = [theta[theta < 0]]
-    omega = np.mean(theta) / deltaTime
-    return omega
+    imgD1, imgD2 = crop_two_img(imgDict1, imgDict2)
+    kptsPairs = get_match_pts(imgD1, imgD2, matcher, display_results)
+    ...
 

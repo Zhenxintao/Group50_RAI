@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-from functions import cal_omega, detect_outliers_1d, detect_largest_circle, cal_omega_any_view
+from functions import cal_omega, detect_outliers_1d, detect_largest_circle, cal_omega_any_view, warm_up
 
 
 def Task3b():
@@ -44,19 +44,25 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
             "circles": ndarray,
         }])
         imageReader (ImageReader)
-        method (str): "sift" or "ord"
+        method (str): "sift" or "orb", "sift" has lower time variance,
+                                       "orb" has faster average time and better acc.
         display_results (bool)
 
     Returns:
         List[float]
     """
+    if method == "sift":
+        matcher = cv2.SIFT_create()
+    else:
+        matcher = cv2.ORB_create()
+        warm_up(datasets, circles, imageReader, matcher)
+
     TList = []
     timeList = []
     for dataset in datasets:
-        thetaList = []
-        imageBuffer = [0, 0]
+        omegaList = []
+        preImageDict = None
         for k, imageInfoDict in enumerate(dataset["images"]):
-            start = time.time()
             imagePath = imageInfoDict["path"]
             image = imageReader.read_image_with_calibration(imagePath)
             center = circles[dataset["path"]]["centers"][k, :]
@@ -72,103 +78,66 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
             else:
                 imageDict["fps"] = imageInfoDict["fps"]
 
-            if k == 0 or k == 1:
-                imageBuffer[k % 2] = imageDict
+            if preImageDict is None:
+                preImageDict = imageDict
                 continue
 
-            prepreImageDict = imageBuffer[k % 2]
-            preImageDict = imageBuffer[(k + 1) % 2]
-            imageBuffer[k % 2] = imageDict
-
-            theta1 = cal_omega(prepreImageDict, preImageDict, method, display_results)
-            theta2 = cal_omega(preImageDict, imageDict, method, display_results)
-
-            theta = (theta1 + theta2) / 2
+            start = time.time()
+            # print(imageDict["center"])
+            omega = cal_omega(preImageDict, imageDict, matcher, display_results)
+            # print(imageDict["center"])
             timeList.append(time.time() - start)
-            thetaList.append(theta)
-        print(thetaList)
-        thetaList = np.array(thetaList)
-        thetaList, _ = detect_outliers_1d(thetaList)
-        T = 2 * np.pi / np.mean(thetaList)
+
+            preImageDict = imageDict
+            omegaList.append(omega)
+
+        omegaList, _ = detect_outliers_1d(np.array(omegaList))
+        T = 2 * np.pi / np.mean(omegaList)
         TList.append(T)
+
     print(f"Average time for one frame: {np.mean((np.array(timeList)))}")
+    print(f"Max time for one frame: {np.max(np.array(timeList))}")
     return TList
 
 
-def Task3c_linear(datasets, circles, imageReader, method="sift", display_results=True):
-    """
-        Continuous Rotation Cycle Estimation from Video.
+def Task3e(datasets, circles, imageReader, method="sift", elevation=1, display_results=True):
+    if method == "sift":
+        matcher = cv2.SIFT_create()
+    else:
+        matcher = cv2.ORB_create()
+        warm_up(datasets, circles, imageReader, matcher)
 
-        Use video algorithms to automatically estimate the rotation cycle
-        over time, noting any variations between 3 captures.
-
-        Args:
-            datasets (List[{
-                "path": str,
-                "images": List[Dict{
-                    "path": str,
-                    "frame": int,
-                    "fps": float,
-                    "timestamp": int,
-                }])
-            circles (List[{
-                "path": str,
-                "circles": ndarray,
-            }])
-            imageReader (ImageReader)
-            method (str): "sift" or "ord"
-            display_results (bool)
-
-        Returns:
-            List[float]
-        """
     TList = []
-    timeList = []
     for dataset in datasets:
-        vList = []
-        imageBuffer = [0, 0]
+        omegaList = []
+        preImageDict = None
         for k, imageInfoDict in enumerate(dataset["images"]):
-            start = time.time()
             imagePath = imageInfoDict["path"]
             image = imageReader.read_image_with_calibration(imagePath)
             center = circles[dataset["path"]]["centers"][k, :]
-            mask = circles[dataset["path"]]["masks"][k, :, :]
+            mask = circles[dataset["path"]]["masks"][k, :]
 
             imageDict = {
                 "image": image,
                 "center": center,
                 "mask": mask,
-                "v": 0,
             }
             if "timestamp" in imageInfoDict.keys():
                 imageDict["ts"] = imageInfoDict["timestamp"]
             else:
                 imageDict["fps"] = imageInfoDict["fps"]
 
-            if k == 0 or k == 1:
-                imageBuffer[k % 2] = imageDict
-                continue
-
-            prepreImageDict = imageBuffer[k % 2]
-            preImageDict = imageBuffer[(k + 1) % 2]
-
-            if preImageDict["v"] == 0:
-                v1 = cal_omega_any_view(prepreImageDict, preImageDict, method, display_results)
+            if elevation == 0:
+                omega = cal_omega(preImageDict, imageDict, matcher, display_results)
             else:
-                v1 = preImageDict["v"]
-            v2 = cal_omega_any_view(preImageDict, imageDict, method, display_results)
+                omega = cal_omega_any_view(preImageDict, imageDict, matcher, elevation, display_results)
 
-            imageDict["v"] = v2
-            v = (v1 + v2) / 2
-            timeList.append(time.time() - start)
-            vList.append(v)
-            imageBuffer[k % 2] = imageDict
+            preImageDict = imageDict
+            omegaList.append(omega)
 
-        # vList, _ = detect_outliers(np.array(vList))
-        print(np.mean(vList))
-        T = 2 * np.pi / np.mean(vList)
+        omegaList, _ = detect_outliers_1d(np.array(omegaList))
+        T = 2 * np.pi / np.mean(omegaList)
         TList.append(T)
-    print(f"Average time for one frame: {np.mean((np.array(timeList)))}")
     return TList
 
 

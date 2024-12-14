@@ -1,0 +1,58 @@
+{
+  "template": {
+    "detect_circle": {
+      "min_dist": 0,
+      "param1": 0,
+      "param2": 0
+    },
+    "distOfCams": 0
+  },
+  "dataset/dual_cam/6/left": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 3.096
+  },
+  "dataset/dual_cam/6/right": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 3.096
+  },
+  "dataset/dual_cam/G2/left": {
+    "detect_circle": {
+      "min_dist": 100,
+      "param1": 50,
+      "param2": 0.6
+    },
+    "distOfCams": 2
+  },
+  "dataset/dual_cam/G2/right": {
+    "detect_circle": {
+      "min_dist": 100,
+      "param1": 50,
+      "param2": 0.6
+    },
+    "distOfCams": 2
+  },
+  "dataset/dual_cam/G1/left": {
+    "detect_circle": {
+      "min_dist": 100,
+      "param1": 50,
+      "param2": 0.6
+    },
+    "distOfCams": 2
+  },
+  "dataset/dual_cam/G1/right": {
+    "detect_circle": {
+      "min_dist": 100,
+      "param1": 50,
+      "param2": 0.6
+    },
+    "distOfCams": 2
+  }
+}
