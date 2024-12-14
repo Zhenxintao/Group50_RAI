@@ -5,7 +5,11 @@
       "param1": 0,
       "param2": 0
     },
-    "distOfCams": 0
+    "distOfCams": 0,
+    "elevation": 0,
+    "offset": 0,
+    "interval": 0,
+    "inverse": 0
   },
   "dataset/dual_cam/6/left": {
     "detect_circle": {
@@ -13,7 +17,11 @@
       "param1": 150,
       "param2": 0.01
     },
-    "distOfCams": 3.096
+    "distOfCams": 3.096,
+    "elevation": 0,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 1
   },
   "dataset/dual_cam/6/right": {
     "detect_circle": {
@@ -21,7 +29,59 @@
       "param1": 150,
       "param2": 0.01
     },
-    "distOfCams": 3.096
+    "distOfCams": 3.096,
+    "elevation": 0,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 1
+  },
+  "dataset/dual_cam/62/left": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 1.1,
+    "elevation": 0,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 0
+  },
+  "dataset/dual_cam/62/right": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 1.1,
+    "elevation": 0,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 0
+  },
+  "dataset/dual_cam/2/left": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 3.096,
+    "elevation": 85,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 1
+  },
+  "dataset/dual_cam/2/right": {
+    "detect_circle": {
+      "min_dist": 300,
+      "param1": 150,
+      "param2": 0.01
+    },
+    "distOfCams": 3.096,
+    "elevation": 85,
+    "offset": 20,
+    "interval": 20,
+    "inverse": 1
   },
   "dataset/dual_cam/G2/left": {
     "detect_circle": {
@@ -29,7 +89,11 @@
       "param1": 50,
       "param2": 0.6
     },
-    "distOfCams": 2
+    "distOfCams": 2,
+    "elevation": 90,
+    "offset": 20,
+    "interval": 1,
+    "inverse": 1
   },
   "dataset/dual_cam/G2/right": {
     "detect_circle": {
@@ -37,7 +101,11 @@
       "param1": 50,
       "param2": 0.6
     },
-    "distOfCams": 2
+    "distOfCams": 2,
+    "elevation": 90,
+    "offset": 20,
+    "interval": 1,
+    "inverse": 1
   },
   "dataset/dual_cam/G1/left": {
     "detect_circle": {
@@ -45,7 +113,11 @@
       "param1": 50,
       "param2": 0.6
     },
-    "distOfCams": 2
+    "distOfCams": 2,
+    "elevation": 90,
+    "offset": 20,
+    "interval": 1,
+    "inverse": 1
   },
   "dataset/dual_cam/G1/right": {
     "detect_circle": {
@@ -53,6 +125,21 @@
       "param1": 50,
       "param2": 0.6
     },
-    "distOfCams": 2
+    "distOfCams": 2,
+    "elevation": 90,
+    "offset": 20,
+    "interval": 1,
+    "inverse": 1
+  },
+  "dataset/single_cam/4": {
+    "detect_circle": {
+      "min_dist": 100,
+      "param1": 50,
+      "param2": 0.6
+    },
+    "elevation": 23,
+    "offset": 20,
+    "interval": 10,
+    "inverse": 0
   }
 }

@@ -4,7 +4,6 @@ import os.path
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import convolve
 
 from COMP0241_CV.final.utils import dataset_to_image_pair
 from functions import detect_largest_circle, kalman_filter
@@ -50,8 +49,8 @@ def Task2a(datasets, imageReader, display_results=True):
         for imageDict in dataset["images"]:
             imagePath = imageDict["path"]
             image = imageReader.read_image_with_calibration(imagePath)
-            circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
-            # circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
+            # circle = detect_largest_circle(image, min_dist=100, param1=50, param2=0.6, display_results=False)
+            circle = detect_largest_circle(image, min_dist=300, param1=150, param2=0.01, display_results=False)
 
             if circle is None:
                 circle = historyCircle
@@ -169,7 +168,7 @@ def Task2b(circles, display_results=True):
     return circles
 
 
-def Task2c(datasets, circles, imageReader, distOfCams=2, display_results=True):
+def Task2c(datasets, circles, imageReader, params, display_results=True):
     """
     Estimate the AO's Height Above Ground.
 
@@ -180,7 +179,9 @@ def Task2c(datasets, circles, imageReader, distOfCams=2, display_results=True):
         datasets:
         circles:
         imageReader:
-        distOfCams (float): The distance between 2 cameras.
+        params (Dict)
+        display_results (bool)
+        # distOfCams (float): The distance between 2 cameras.
 
     Returns:
         List[List[float]]: Depth of each image.
@@ -188,6 +189,7 @@ def Task2c(datasets, circles, imageReader, distOfCams=2, display_results=True):
     pairDatasets = dataset_to_image_pair(datasets, circles)
     depthList = []
     for pairDataset in pairDatasets:
+        distOfCams = params[os.path.join(pairDataset["path"], "left")]["distOfCams"]
         leftImages = pairDataset["left"]
         rightImages = pairDataset["right"]
         depths = []

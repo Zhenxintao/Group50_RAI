@@ -4,7 +4,8 @@ import time
 import cv2
 import numpy as np
 
-from functions import cal_omega, detect_outliers_1d, detect_largest_circle, cal_omega_any_view, warm_up
+from functions import cal_theta_vertical, detect_outliers_1d, detect_largest_circle, cal_theta_inclination, warm_up, \
+    cal_omega
 
 
 def Task3b():
@@ -23,7 +24,7 @@ def Task3b():
     return trueT, trueOmega
 
 
-def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results=True):
+def Task3c(datasets, circles, imageReader, method="sift", display_results=True):
     """
     Continuous Rotation Cycle Estimation from Video.
 
@@ -78,20 +79,14 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
             else:
                 imageDict["fps"] = imageInfoDict["fps"]
 
-            if preImageDict is None:
-                preImageDict = imageDict
-                continue
-
-            start = time.time()
-            # print(imageDict["center"])
-            omega = cal_omega(preImageDict, imageDict, matcher, display_results)
-            # print(imageDict["center"])
-            timeList.append(time.time() - start)
-
+            if preImageDict is not None:
+                start = time.time()
+                omega = cal_omega(preImageDict, imageDict, matcher, display_results=display_results)
+                timeList.append(time.time() - start)
+                omegaList.append(omega)
             preImageDict = imageDict
-            omegaList.append(omega)
 
-        omegaList, _ = detect_outliers_1d(np.array(omegaList))
+        # omegaList, _ = detect_outliers_1d(np.array(omegaList))
         T = 2 * np.pi / np.mean(omegaList)
         TList.append(T)
 
@@ -100,7 +95,28 @@ def Task3c_rotate(datasets, circles, imageReader, method="sift", display_results
     return TList
 
 
-def Task3e(datasets, circles, imageReader, method="sift", elevation=1, display_results=True):
+def Task3e(datasets, circles, imageReader, params, method="sift", display_results=True):
+    """
+    Compare Estimations from Different Views.
+
+    Perform estimations of rotation speed using cameras placed at
+    different positions (e.g., bottom view, side view) and compare
+    results (in seconds/rotation).
+
+    Args:
+        datasets:
+        circles:
+        imageReader:
+        params (Dict)
+        method ("str"): "sift" or "orb"
+        # elevation (float): 90 is vertical, 0 is horizontal.
+        # offset (int): The maximum deviation above and below the equator.
+        # interval (int):
+        display_results (bool)
+
+    Returns:
+
+    """
     if method == "sift":
         matcher = cv2.SIFT_create()
     else:
@@ -109,9 +125,14 @@ def Task3e(datasets, circles, imageReader, method="sift", elevation=1, display_r
 
     TList = []
     for dataset in datasets:
+        elevation = params[dataset["path"]]["elevation"]
+        offset = params[dataset["path"]]["offset"]
+        interval = params[dataset["path"]]["interval"]
+        inverse = params[dataset["path"]]["inverse"]
         omegaList = []
         preImageDict = None
-        for k, imageInfoDict in enumerate(dataset["images"]):
+        for k in range(0, len(dataset["images"]), interval):
+            imageInfoDict = dataset["images"][k]
             imagePath = imageInfoDict["path"]
             image = imageReader.read_image_with_calibration(imagePath)
             center = circles[dataset["path"]]["centers"][k, :]
@@ -127,13 +148,10 @@ def Task3e(datasets, circles, imageReader, method="sift", elevation=1, display_r
             else:
                 imageDict["fps"] = imageInfoDict["fps"]
 
-            if elevation == 0:
-                omega = cal_omega(preImageDict, imageDict, matcher, display_results)
-            else:
-                omega = cal_omega_any_view(preImageDict, imageDict, matcher, elevation, display_results)
-
+            if preImageDict is not None:
+                omega = cal_omega(preImageDict, imageDict, matcher, elevation, offset, interval, inverse, display_results)
+                omegaList.append(omega)
             preImageDict = imageDict
-            omegaList.append(omega)
 
         omegaList, _ = detect_outliers_1d(np.array(omegaList))
         T = 2 * np.pi / np.mean(omegaList)

@@ -1,8 +1,24 @@
 import os
 import re
+import json
 
 import cv2
 import numpy as np
+
+
+def load_params(path):
+    """
+    Load the parameters for all datasets from a json file.
+
+    Args:
+        path (str)
+
+    Returns:
+        Dict: params for all datasets
+    """
+    with open(path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return data
 
 
 def get_images_in_folder(path):
@@ -31,7 +47,7 @@ def get_images_in_folder(path):
             "frame": frame,
         }
         if "frame" in imageName:
-            imageInfo["fps"] = 31.96
+            imageInfo["fps"] = 30  # 31.96
         else:
             imageInfo["timestamp"] = int(imageName[:-4])
 

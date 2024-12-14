@@ -90,6 +90,55 @@ def kalman_filter(observations, A, H, Q, R, P0):
     return estimates
 
 
+def detect_outliers_1d(data, threshold=3):
+    """
+    Detect the outliers and filter the data.
+
+    Args:
+        data (ndarray): [N]
+        threshold (int)
+
+    Returns:
+        ndarray: filtered data
+        ndarray: outliers
+    """
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    outliers = []
+    filteredData = []
+    for value in data:
+        if abs(value - mean) > threshold * std_dev:
+            outliers.append(value)
+        else:
+            filteredData.append(value)
+    return np.array(filteredData), np.array(outliers)
+
+
+def detect_outliers_2d(data, threshold=3):
+    """
+    Detect the outliers and filter the data.
+
+    Args:
+        data (ndarray): [N, 2]
+        threshold (int)
+
+    Returns:
+        ndarray: filtered data
+        ndarray: outliers
+    """
+    mean = np.mean(data, axis=0)
+    std_dev = np.std(data, axis=0)
+
+    outMaskX = np.abs(data[:, 0] - mean[0]) > threshold * std_dev[0]
+    outMaskY = np.abs(data[:, 1] - mean[1]) > threshold * std_dev[1]
+    outMask = np.logical_or(outMaskX, outMaskY)
+
+    outliers = data[outMask]
+    filteredData = data[~outMask]
+    return np.array(filteredData), np.array(outliers)
+
+
 def get_match_pts(imgDict1, imgDict2, matcher, display_results=True):
     """
     Get match points between 2 images with a mask
@@ -140,108 +189,6 @@ def get_match_pts(imgDict1, imgDict2, matcher, display_results=True):
     return np.array(kptsPairs, dtype=np.float32)
 
 
-def detect_outliers_1d(data, threshold=3):
-    """
-    Detect the outliers and filter the data.
-
-    Args:
-        data (ndarray): [N]
-        threshold (int)
-
-    Returns:
-        ndarray: filtered data
-        ndarray: outliers
-    """
-    mean = np.mean(data)
-    std_dev = np.std(data)
-
-    outliers = []
-    filteredData = []
-    for value in data:
-        if abs(value - mean) > threshold * std_dev:
-            outliers.append(value)
-        else:
-            filteredData.append(value)
-    return np.array(filteredData), np.array(outliers)
-
-
-def detect_outliers_2d(data, threshold=3):
-    """
-    Detect the outliers and filter the data.
-
-    Args:
-        data (ndarray): [N, 2]
-        threshold (int)
-
-    Returns:
-        ndarray: filtered data
-        ndarray: outliers
-    """
-    mean = np.mean(data, axis=0)
-    std_dev = np.std(data, axis=0)
-
-    outMaskX = np.abs(data[:, 0] - mean[0]) > threshold * std_dev[0]
-    outMaskY = np.abs(data[:, 1] - mean[1]) > threshold * std_dev[1]
-    outMask = np.logical_or(outMaskX, outMaskY)
-
-    outliers = data[outMask]
-    filteredData = data[~outMask]
-    return np.array(filteredData), np.array(outliers)
-
-
-def cal_theta_any_view(imgDict1, imgDict2, kptsPairs, elevation=0):
-    """
-    Calculate the rotation degree of matched points between 2 images
-    from any view.
-
-    Args:
-        imgDict1: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the first image.
-        imgDict2: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the second image.
-        kptsPairs (ndarray): [N, 2, 2]
-        elevation (float): Degree of the elevation
-
-    Returns:
-        ndarray: The rotate degree of matched points without outliers.
-    """
-    center1 = imgDict1["center"]
-    center2 = imgDict2["center"]
-    r1 = center1[2] * np.cos(elevation)
-    r2 = center2[2] * np.cos(elevation)
-    bound1 = [center1[1] - 20, center1[1] + 20]
-    bound2 = [center2[1] - 20, center2[1] + 20]
-
-    kpts1 = kptsPairs[:, 0, :]
-    kpts2 = kptsPairs[:, 1, :]
-
-    boundMask1 = np.logical_and(bound1[0] < kpts1[:, 1], bound1[1] > kpts1[:, 1])
-    boundMask2 = np.logical_and(bound2[0] < kpts2[:, 1], bound2[1] > kpts2[:, 1])
-    boundMask = np.logical_and(boundMask1, boundMask2)
-    kpts1 = kpts1[boundMask]
-    kpts2 = kpts2[boundMask]
-
-    # print("="*20)
-    # print(center1)
-    # print(center2)
-    dist1 = kpts1[:, 0] - center1[0]
-    dist2 = kpts2[:, 0] - center2[0]
-    theta1 = np.arcsin(dist1 / r1)
-    theta2 = np.arcsin(dist2 / r2)
-    theta = theta2 - theta1
-    # pair = np.array([dist1, dist2])
-    # print(pair.T)
-    # dist = dist2 - dist1
-    # dist, _ = detect_outliers(dist)
-    return theta
-
-
 def crop_two_img(imgDict1, imgDict2):
     """
     Crop two frame by finding the minimum bound.
@@ -284,7 +231,7 @@ def crop_two_img(imgDict1, imgDict2):
     return imgDict1, imgDict2
 
 
-def get_rot_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
+def get_affine_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
     """
     Calculate rotation matrix by matched key points and cv2.estimateAffinePartial2D
 
@@ -295,7 +242,7 @@ def get_rot_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
         display_results (bool)
 
     Returns:
-        ndarray: Rotation matrix. [2, 2]
+        ndarray: Affine matrix. [2, 3]
     """
     c1 = imgDict1["center"]
     c2 = imgDict2["center"]
@@ -314,9 +261,9 @@ def get_rot_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
         kpts2 = kpts2 + c2[:2]
         kpts3 = kpts3 + c2[:2]
 
-        for point in kpts1: cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 255, 0), -1)
-        for point in kpts2: cv2.circle(canvas, tuple(point.astype(int)), 2, (0, 0, 255), -1)
-        for point in kpts3: cv2.circle(canvas, tuple(point.astype(int)), 1, (255, 0, 0), -1)
+        for point in kpts1: cv2.circle(canvas, tuple(point.astype(int)), 4, (0, 255, 0), -1)
+        for point in kpts2: cv2.circle(canvas, tuple(point.astype(int)), 3, (0, 0, 255), -1)
+        for point in kpts3: cv2.circle(canvas, tuple(point.astype(int)), 2, (255, 0, 0), -1)
 
         for p1, p2 in zip(kpts1, kpts3):
             cv2.line(canvas, tuple(p1.astype(int)), tuple(p2.astype(int)), (255, 255, 255), 1)
@@ -324,37 +271,54 @@ def get_rot_mat(imgDict1, imgDict2, kptsPairs, display_results=True):
         cv2.imshow("Affine Transform Visualization", canvas)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-    return matrix[:, :2]
+    return matrix
 
 
-def cal_omega(imgDict1, imgDict2, matcher, display_results=True):
+def get_equator_mask(imgDict, pts, elevation, offset, inverse):
     """
-    Calculate the OA's rotation velocity by given two image.
+    Find the mask represents the region nearby the equator.
+
     Args:
-        imgDict1: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the first image.
-        imgDict2: (Dict{
-                "image": ndarray,
-                "center": ndarray,
-                "mask": ndarray,
-            }): Information about the second image.
-        matcher (cv2.SIFT | cv2.ORB):
-        display_results (bool)
+        imgDict:
+        pts (ndarray): [N, 2]
+        elevation:
+        offset (int): The maximum deviation above and below the equator.
+        inverse (bool): Inverse the coordinate.
 
     Returns:
-        float: Rotation velocity.
+        ndarray
     """
-    imgD1, imgD2 = crop_two_img(imgDict1, imgDict2)
-    kptsPairs = get_match_pts(imgD1, imgD2, matcher, display_results)
-    rotMat = get_rot_mat(imgD1, imgD2, kptsPairs, display_results)
-    theta = np.arctan2(rotMat[1, 0], rotMat[0, 0])
+    r = imgDict["center"][2]
+    H = imgDict["image"].shape[0]
+    if inverse:
+        elevation = 90 - elevation
+        equatorH = H - int(r * np.sin(np.radians(elevation)))
+    else:
+        equatorH = r - int(r * np.sin(np.radians(elevation)))
 
-    if "ts" in imgD1.keys(): t = (imgD2["ts"] - imgD1["ts"]) / 1e6
-    else:                    t = 1. / imgD1["fps"]
-    return theta / (t + 1e-9)
+    equatorMaskAbove = pts[:, 1] < equatorH + offset
+    equatorMaskBelow = pts[:, 1] > equatorH - offset
+    return np.logical_and(equatorMaskAbove, equatorMaskBelow)
+
+
+def get_pts_in_equator(imgDict1, imgDict2, kptsPairs, elevation, offset=20, inverse=False):
+    """
+
+    Args:
+        imgDict1:
+        imgDict2:
+        kptsPairs (ndarray): [N, 2, 2]
+        elevation:
+        offset (int): The maximum deviation above and below the equator.
+        inverse (bool): Inverse the coordinate
+
+    Returns:
+        ndarray: Key point pairs nearby the equator.
+    """
+    equatorMask1 = get_equator_mask(imgDict1, kptsPairs[:, 0, :], elevation, offset, inverse)
+    equatorMask2 = get_equator_mask(imgDict2, kptsPairs[:, 1, :], elevation, offset, inverse)
+    equatorMask = np.logical_and(equatorMask1, equatorMask2)
+    return kptsPairs[equatorMask]
 
 
 def warm_up(datasets, circles, imageReader, matcher):
@@ -383,31 +347,63 @@ def warm_up(datasets, circles, imageReader, matcher):
     else:
         imgD["fps"] = datasets[0]["images"][0]["fps"]
     imgD = copy.deepcopy(imgD)
-    cal_omega(imgD, imgD, matcher, False)
+    cal_omega(imgD, imgD, matcher, elevation=90, display_results=False)
 
 
-def cal_omega_any_view(imgDict1, imgDict2, matcher, elevation=1, display_results=True):
+def cal_theta_vertical(imgD1, imgD2, kptsPairs, display_results=True):
+    """
+    Calculate the OA's rotation velocity by given two image in vertical view.
+    """
+    matrix = get_affine_mat(imgD1, imgD2, kptsPairs, display_results)
+    rotMat = matrix[:, :2]
+    theta = np.arctan2(rotMat[1, 0], rotMat[0, 0])
+    return theta
+
+
+def cal_theta_inclination(imgD1, imgD2, kptsPairs, elevation, offset=20, inverse=False, display_results=True):
     """
     Calculate the OA's rotation velocity by given two image from any view.
+    """
+    eqPairs = get_pts_in_equator(imgD1, imgD2, kptsPairs, elevation, offset, inverse)
+    matrix = get_affine_mat(imgD1, imgD2, eqPairs, display_results)
+    deltaX = matrix[0, -1]
+    r = (imgD1["center"][2] + imgD2["center"][2]) / 2
+    theta = np.arcsin(deltaX / r)
+    return theta
+
+
+def cal_omega(imgDict1, imgDict2, matcher, elevation=0, offset=20, interval=10, inverse=False, display_results=True):
+    """
+    Calculate the OA's rotation velocity by given two image.
 
     Args:
-        imgDict1: (Dict{
+        imgDict1 (Dict{
                 "image": ndarray,
                 "center": ndarray,
                 "mask": ndarray,
             }): Information about the first image.
-        imgDict2: (Dict{
+        imgDict2 (Dict{
                 "image": ndarray,
                 "center": ndarray,
                 "mask": ndarray,
             }): Information about the second image.
-        matcher (cv2.SIFT | cv2.ORB)
-        elevation (float)
+        matcher (cv2.SIFT | cv2.ORB):
+        elevation (float): 90 is vertical, 0 is horizontal.
+        offset (int): The maximum deviation above and below the equator.
+        interval (int): The interval number of frames.
+        inverse (bool): Inverse the coordinate.
+        display_results (bool)
 
     Returns:
-        float
+        float: Rotation velocity.
     """
     imgD1, imgD2 = crop_two_img(imgDict1, imgDict2)
     kptsPairs = get_match_pts(imgD1, imgD2, matcher, display_results)
-    ...
-
+    if elevation == 90:
+        theta = cal_theta_vertical(imgD1, imgD2, kptsPairs, display_results)
+    else:
+        theta = cal_theta_inclination(imgD1, imgD2, kptsPairs, elevation, offset, inverse, display_results)
+    if "ts" in imgD1.keys(): t = (imgD2["ts"] - imgD1["ts"]) / 1e6
+    else:                    t = 1. / imgD1["fps"]
+    t *= interval
+    return theta / (t + 1e-9)
